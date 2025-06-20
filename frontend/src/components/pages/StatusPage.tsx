@@ -1,17 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "../ui/card";
-import { Input } from "../ui/input";
 import ServerStatusCard from "./ServerStatusCard";
 import PlayerStatusCard from "./PlayerStatusCard";
 import ServerPropertiesCard from "./ServerPropertiesCard";
+import ConsolePage from "./ConsolePage";
 
 interface StatusPageProps {
   visible: boolean;
@@ -55,7 +46,6 @@ export interface ServerPropertiesInterface {
 }
 
 export default function StatusPage(props: StatusPageProps) {
-
     const [serverStatusData, setServerStatusData] =
     useState<ServerStatusInterface | null>(null);
     const [playerData, setPlayersData] = useState<PlayersInterface | null>(null);
@@ -74,7 +64,7 @@ export default function StatusPage(props: StatusPageProps) {
         );
 
         ws.current.onopen = () => {
-            console.log("connected to ws");
+            console.log("connected to server status ws");
         };
 
         ws.current.onmessage = (event) => {
@@ -91,33 +81,22 @@ export default function StatusPage(props: StatusPageProps) {
     }, [props.visible]);
 
     useEffect(() => {});
-
     return (
-        <main className={`${props.visible !== true ? "hidden" : "block"} p-4`}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {serverStatusData && <ServerStatusCard data={ serverStatusData } />}
+        <div
+            className={`${
+                props.visible !== true ? "hidden" : "flex flex-col gap-4 h-full"
+            }`}
+        >
+            <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                {serverStatusData && <ServerStatusCard data={serverStatusData} />}
                 {playerData && <PlayerStatusCard data={playerData} />}
-                {serverPropertiesData && <ServerPropertiesCard data={serverPropertiesData} />}
+                {serverPropertiesData && (
+                    <ServerPropertiesCard data={serverPropertiesData} />
+                )}
+            </div>{" "}
+            <div className="flex-1 min-h-0">
+                <ConsolePage visible={true} isPage={false} />
             </div>
-            <Card className="mt-4">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardDescription>Server Logs</CardDescription>
-                        <CardTitle className="text-2xl font-bold">
-              Recent Activity
-                        </CardTitle>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    
-                </CardContent>
-                <CardFooter>
-                    <div className="flex w-full items-center space-x-2">
-                        <Input placeholder="Enter a command..." type="text" />
-                        <Button variant={"outline"}>Send</Button>
-                    </div>
-                </CardFooter>
-            </Card>
-        </main>
+        </div>
     );
 }

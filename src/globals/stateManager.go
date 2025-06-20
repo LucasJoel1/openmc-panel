@@ -1,10 +1,14 @@
 package globals
 
 import (
+	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
-
+	"path"
+	"strconv"
+	"time"
 	"github.com/bwmarrin/discordgo"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -18,7 +22,6 @@ var startTime int64 = 0
 var proc *process.Process = nil
 var versions ServerVersions
 
-
 func InitDiscord(token string) *discordgo.Session {
 	var err error
 	if discord != nil {
@@ -31,7 +34,7 @@ func InitDiscord(token string) *discordgo.Session {
 	return discord
 }
 
-func SetServerVersions(minecraftVersion string, modloader string , modloaderVersion string) {
+func SetServerVersions(minecraftVersion string, modloader string, modloaderVersion string) {
 	versions.MinecraftVersion = minecraftVersion
 	versions.Modloader = modloader
 	versions.ModloaderVersion = modloaderVersion
@@ -59,18 +62,62 @@ func GetServerSettings() *ServerSettingsStruct {
 }
 
 func GetDiscord() *discordgo.Session { return discord }
-func SetServerRunning(running bool)  { serverRunning = running }
-func GetServerRunning() bool         { return serverRunning }
+
+func SetServerRunning(running bool) {
+	if !running {
+		lockServer = true
+		go func() {
+			for {
+				isRunning, _ := proc.IsRunning()
+				if !isRunning {
+					break
+				}
+			}
+			lockServer = false
+			serverRunning = false
+
+			dataTime := time.Now().UnixMilli()
+			srcPath := path.Join(serverSettings.Path, "logs", "latest.log")
+			dstPath := path.Join("./logs", strconv.FormatInt(dataTime, 10)+".log")
+
+			srcFile, err := os.Open(srcPath)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer srcFile.Close()
+
+			dstFile, err := os.Create(dstPath + ".gz")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer dstFile.Close()
+
+			gzipWriter := gzip.NewWriter(dstFile)
+			defer gzipWriter.Close()
+
+			_, err = io.Copy(gzipWriter, srcFile)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
+	} else {
+		serverRunning = running
+	}
+}
+
+func GetServerRunning() bool { return serverRunning }
 func SetPipes(_stdout io.ReadCloser, _stdin io.WriteCloser) {
-	serverPipes.Stdout = _stdout;
+	serverPipes.Stdout = _stdout
 	serverPipes.Stdin = _stdin
 }
 func GetPipes() PipesStruct {
 	return *serverPipes
 }
-func LockServer(lock bool) { lockServer = lock }
-func GetLocked() bool { return lockServer }
-func SetStartTime(_startTime int64) { startTime = _startTime }
-func GetStartTime() int64 { return startTime }
+func LockServer(lock bool)              { lockServer = lock }
+func GetLocked() bool                   { return lockServer }
+func SetStartTime(_startTime int64)     { startTime = _startTime }
+func GetStartTime() int64               { return startTime }
 func SetProcess(_proc *process.Process) { proc = _proc }
-func GetProcess() *process.Process { return proc }
+func GetProcess() *process.Process      { return proc }
