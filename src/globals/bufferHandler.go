@@ -24,7 +24,7 @@ func AppendConnection(_conn *websocket.Conn) *connNode {
 	newNode := connNode{
 		prevNode: nil,
 		nextNode: nil,
-		conn: _conn,
+		conn:     _conn,
 	}
 
 	if wsConns == nil {
@@ -33,7 +33,7 @@ func AppendConnection(_conn *websocket.Conn) *connNode {
 	}
 
 	nextConn := wsConns
-	
+
 	for nextConn.nextNode != nil {
 		nextConn = nextConn.nextNode
 	}
@@ -116,8 +116,20 @@ func StartLogging() {
 
 			node := wsConns
 			for connsActive := node != nil; connsActive; connsActive = node != nil {
-				node.conn.WriteMessage(websocket.TextMessage, []byte(chunk))
-				node = node.nextNode
+				if node.conn != nil {
+					err := node.conn.WriteMessage(websocket.TextMessage, []byte(chunk))
+					if err != nil {
+						brokenNode := node
+						node = node.nextNode
+						DeleteConnection(brokenNode)
+						continue
+					}
+					node = node.nextNode
+				} else {
+					brokenNode := node
+					node = node.nextNode
+					DeleteConnection(brokenNode)
+				}
 			}
 
 			bot.ChannelMessageSend(channel, chunk)

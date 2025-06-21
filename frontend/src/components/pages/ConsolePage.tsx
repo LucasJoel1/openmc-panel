@@ -12,10 +12,11 @@ import { Input } from "../ui/input";
 import { useEffect, useRef, useState } from "react";
 import { Separator } from "../ui/separator";
 import React from "react";
+import LogsHistory from "./LogsHistory";
 
 interface ConsolePageProps {
-  visible: boolean;
-  isPage: boolean;
+    visible: boolean;
+    isPage: boolean;
 }
 
 export default function ConsolePage(props: ConsolePageProps) {
@@ -27,8 +28,8 @@ export default function ConsolePage(props: ConsolePageProps) {
     useEffect(() => {
         ws.current = new WebSocket(
             "ws://" +
-        window.location.href.split("#")[0].split("://")[1] +
-        "api/ws/serverLogs"
+            window.location.href.split("#")[0].split("://")[1] +
+            "api/ws/serverLogs"
         );
 
         ws.current.onopen = () => {
@@ -63,16 +64,16 @@ export default function ConsolePage(props: ConsolePageProps) {
                     <CardDescription>Server Logs</CardDescription>
                     <div className="flex justify-between w-full">
                         <CardTitle className="text-2xl font-bold">
-            Recent Activity
+                            Recent Activity
                         </CardTitle>
                         <div className="flex items-center gap-3">
                             <Button
                                 variant={autoscroll ? "default" : "outline"}
                                 onClick={() => setAutoscroll(!autoscroll)}
                             >
-            Autoscroll
+                                Autoscroll
                             </Button>
-                            <Button>Logs History</Button>
+                            {props.isPage && <LogsHistory />}
                         </div>
                     </div>
                 </div>{" "}
