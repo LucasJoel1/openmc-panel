@@ -42,8 +42,6 @@ func GetSavedLogs(w http.ResponseWriter, r *http.Request) {
 			Size: logInfo.Size(),
 		}
 		logs = append(logs, item)
-		test, _ := log.Info()
-		test.Size()
 	}
 
 	json.NewEncoder(w).Encode(map[string][]logType{

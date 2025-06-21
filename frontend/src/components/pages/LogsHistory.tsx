@@ -10,7 +10,7 @@ import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { FileText, Download, Trash2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 interface historicalLog {
     id: number,
@@ -26,7 +26,12 @@ interface logType {
     size: number
 }
 
-export default function LogsHistory() {
+interface logsHistoryProps {
+    setLoadedLogs?: Dispatch<SetStateAction<string>>
+    setUseLive?: Dispatch<SetStateAction<boolean>>
+}
+
+export default function LogsHistory(props: logsHistoryProps) {
     const [historicalLogs, setHistoricalLogs] = useState<historicalLog[]>([]);
 
     const getLogs = () => {
@@ -60,17 +65,27 @@ export default function LogsHistory() {
             })
     }
 
+    const getLogByID = (id: number) => {
+        fetch(`/api/getSavedLog?logID=${id.toString()}`)
+            .then((res) => res.blob())
+            .then(blob => {
+                const ds = new DecompressionStream("gzip")
+                const decompressionStream = blob.stream().pipeThrough(ds);
+                return new Response(decompressionStream)
+            })
+            .then((ds) => ds.blob())
+            .then((data) => data.text())
+            .then((logs) => {
+                if (props.setLoadedLogs !== undefined && props.setUseLive !== undefined) {
+                    props.setLoadedLogs(logs)
+                    props.setUseLive(false)
+                }
+            })
+    }
+
     useEffect(() => {
         getLogs()
     }, [])
-
-    const handleLogLoad = (logId: number) => {
-        console.log("Loading log:", logId);
-    };
-
-    const handleLogDelete = (logId: number) => {
-        console.log("Deleting log:", logId);
-    };
 
     return (
         <Sheet>
@@ -101,14 +116,14 @@ export default function LogsHistory() {
                                     <FileText className="h-4 w-4 text-muted-foreground" />
                                     <div>
                                         <p className="font-medium text-sm">{log.date}</p>
-                                        <p className="text-xs text-muted-foreground">{log.time} • {log.size}</p>
+                                        <p className="text-xs text-muted-foreground">{log.time} • {log.size} (compressed)</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => handleLogLoad(log.id)}
+                                        onClick={() => getLogByID(log.id)}
                                         className="h-7 px-3"
                                     >
                                         <Download className="h-3 w-3 mr-1" />
@@ -117,7 +132,7 @@ export default function LogsHistory() {
                                     <Button
                                         size="sm"
                                         variant="destructive"
-                                        onClick={() => handleLogDelete(log.id)}
+                                        // onClick={}
                                         className="h-7 px-3"
                                     >
                                         <Trash2 className="h-3 w-3 mr-1" />

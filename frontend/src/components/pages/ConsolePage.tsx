@@ -19,8 +19,16 @@ interface ConsolePageProps {
     isPage: boolean;
 }
 
+// interface LoadedLog {
+//     date: Date
+//     index: number
+//     data: string
+// }
+
 export default function ConsolePage(props: ConsolePageProps) {
     const [logs, setLogs] = useState<string[]>([]);
+    const [loadedLog, setLoadedLog] = useState<string>("")
+    const [useLive, setUseLive] = useState<boolean>(true)
     const [autoscroll, setAutoscroll] = useState<boolean>(true);
     const ws = useRef<WebSocket | null>(null);
     const lastElement = useRef<HTMLDivElement | null>(null);
@@ -67,13 +75,20 @@ export default function ConsolePage(props: ConsolePageProps) {
                             Recent Activity
                         </CardTitle>
                         <div className="flex items-center gap-3">
+                            {!useLive && <Button
+                                variant="default"
+                                onClick={() => setUseLive(true)}
+                            >
+                                Show Live
+                            </Button>
+                            }
                             <Button
                                 variant={autoscroll ? "default" : "outline"}
                                 onClick={() => setAutoscroll(!autoscroll)}
                             >
                                 Autoscroll
                             </Button>
-                            {props.isPage && <LogsHistory />}
+                            {props.isPage && <LogsHistory setLoadedLogs={setLoadedLog} setUseLive={setUseLive} />}
                         </div>
                     </div>
                 </div>{" "}
@@ -82,7 +97,7 @@ export default function ConsolePage(props: ConsolePageProps) {
                 <div className="absolute inset-0 px-6">
                     <ScrollArea className="h-full w-full rounded-md border">
                         <div className="p-4">
-                            {logs.map((log, index) => (
+                            {useLive ? logs.map((log, index) => (
                                 <React.Fragment key={log}>
                                     <pre className="text-sm whitespace-pre-wrap">{log}</pre>
                                     <Separator
@@ -90,7 +105,10 @@ export default function ConsolePage(props: ConsolePageProps) {
                                         ref={index === logs.length - 1 ? lastElement : null}
                                     />
                                 </React.Fragment>
-                            ))}
+                            ))
+                                :
+                                <pre className="text-sm whitespace-pre-wrap">{loadedLog}</pre>
+                            }
                         </div>
                     </ScrollArea>
                 </div>
