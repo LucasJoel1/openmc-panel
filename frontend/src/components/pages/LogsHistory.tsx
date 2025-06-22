@@ -11,8 +11,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { FileText, Download, Trash2, RefreshCw } from "lucide-react";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
-import { DialogClose } from "@radix-ui/react-dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "../ui/dialog";
 import { toast } from "sonner";
 
 interface historicalLog {
