@@ -13,6 +13,7 @@ import { FileText, Download, Trash2, RefreshCw } from "lucide-react";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { toast } from "sonner";
 
 interface historicalLog {
     id: number,
@@ -69,6 +70,10 @@ export default function LogsHistory(props: logsHistoryProps) {
                 });
                 setHistoricalLogs(logs)
             })
+            .catch(error => {
+                console.error(`failed to fetch logs ${error}`)
+                toast("failed to retrieve logs list from server")
+            })
     }
 
     const getLogByID = (id: number) => {
@@ -87,11 +92,18 @@ export default function LogsHistory(props: logsHistoryProps) {
                     props.setUseLive(false)
                 }
             })
+            .catch(() => {
+                toast(`error loading log with id ${id}`)
+            })
     }
 
     const deleteLogByID = (id: number) => {
         fetch(`/api/deleteLog?logID=${id.toString()}`)
             .then(() => getLogs())
+            .then((error) => {
+                console.error(`failed to delete log ${error}`)
+                toast(`failed to delete log with id ${id}`)
+            })
     }
 
     useEffect(() => {

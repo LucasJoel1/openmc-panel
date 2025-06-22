@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"strconv"
 	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -67,14 +69,25 @@ func SetServerRunning(running bool) {
 	if !running {
 		lockServer = true
 		go func() {
+			if proc == nil {
+				lockServer = false
+				serverRunning = false
+				return
+			}
 			for {
 				isRunning, _ := proc.IsRunning()
 				if !isRunning {
 					break
 				}
+				time.Sleep(100 * time.Millisecond)
 			}
 			lockServer = false
 			serverRunning = false
+
+			if serverSettings == nil || serverSettings.Path == "" {
+				log.Println("Server settings not initialized or path is empty")
+				return
+			}
 
 			dataTime := time.Now().UnixMilli()
 			srcPath := path.Join(serverSettings.Path, "logs", "latest.log")
@@ -82,14 +95,14 @@ func SetServerRunning(running bool) {
 
 			srcFile, err := os.Open(srcPath)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return
 			}
 			defer srcFile.Close()
 
 			dstFile, err := os.Create(dstPath + ".gz")
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return
 			}
 			defer dstFile.Close()

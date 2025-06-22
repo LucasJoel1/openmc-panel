@@ -10,6 +10,16 @@ import (
 func ExecuteCommand(w http.ResponseWriter, r *http.Request) {
 	command := r.URL.Query().Get("command")
 
+	if command == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Command parameter required",
+			"errorCode": 1,
+		})
+		return
+	}
+
 	writer := bufio.NewWriter(globals.GetPipes().Stdin)
 
 	_, err := writer.WriteString(command + "\n")

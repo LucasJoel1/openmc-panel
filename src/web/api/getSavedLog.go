@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -10,13 +11,21 @@ import (
 func GetSavedLog(w http.ResponseWriter, r *http.Request) {
 	logID := r.URL.Query().Get("logID")
 
+	if logID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if strings.ContainsAny(logID, "/\\..") {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
 	w.Header().Set("Content-Type", "application/gzip")
 
 	dir, err := os.ReadDir("./logs")
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
 		return
 	}
 
@@ -35,7 +44,7 @@ func GetSavedLog(w http.ResponseWriter, r *http.Request) {
 			_, err = io.Copy(w, file)
 
             if err != nil {
-                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error streaming log file")
             }
             return
 		}

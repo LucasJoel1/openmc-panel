@@ -50,12 +50,17 @@ func main() {
 	info, err := os.Stat("./logs")
 
 	if os.IsNotExist(err) {
-		os.Mkdir("./logs", 0755)
+		err = os.Mkdir("./logs", 0755)
+		if err != nil {
+			fmt.Println("error creating logs folder, please create manually")
+			return
+		}
 	} else if err != nil {
 		fmt.Println("error reading logs folder, either reinstall or manually create logs folder")
 		return
 	} else if !info.IsDir() {
 		fmt.Println("logs has been created as a file, please delete the file and create as a folder")
+		return
 	}
 
 	fmt.Println("App online. Press CTRL-C to exit")

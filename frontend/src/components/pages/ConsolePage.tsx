@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { Separator } from "../ui/separator";
 import React from "react";
 import LogsHistory from "./LogsHistory";
+import { toast } from "sonner";
 
 interface ConsolePageProps {
     visible: boolean;
@@ -35,6 +36,7 @@ export default function ConsolePage(props: ConsolePageProps) {
     const lastElement = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        if (!props.visible) return;
         ws.current = new WebSocket(
             "ws://" +
             window.location.href.split("#")[0].split("://")[1] +
@@ -46,13 +48,16 @@ export default function ConsolePage(props: ConsolePageProps) {
         };
 
         ws.current.onmessage = (event) => {
-            setLogs((prevLogs) => [...prevLogs, event.data]);
+            setLogs((prevLogs) => {
+                const newLogs = [...prevLogs, event.data]
+                return newLogs.length > 1000 ? newLogs.slice(-1000) : newLogs;
+            });
         };
 
         return () => {
             ws.current?.close();
         };
-    }, []);
+    }, [props.visible]);
 
     useEffect(() => {
         if (autoscroll && logs.length > 0 && lastElement.current !== null) {
@@ -69,10 +74,12 @@ export default function ConsolePage(props: ConsolePageProps) {
             .then(response => {
                 if (!response.ok) {
                     console.error('Failed to execute command');
+                    toast(`failed to execute command ${command}`)
                 }
             })
             .catch(error => {
                 console.error('Error executing command:', error);
+                toast(`failed to execute command ${command}`)
             });
 
         setCommand("");

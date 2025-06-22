@@ -10,6 +10,16 @@ import (
 func DeleteLog(w http.ResponseWriter, r *http.Request) {
 	logID := r.URL.Query().Get("logID")
 
+	if logID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if strings.ContainsAny(logID, "/\\..") {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	dir, err := os.ReadDir("./logs")
 
 	if err != nil {
