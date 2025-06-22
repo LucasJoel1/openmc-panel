@@ -223,6 +223,5 @@ func fabricBasedGetServerVersion(serverFolder string) (version string) {
 		}
 	}
 
-	fmt.Println("VERSION2: " + version)
 	return
 }

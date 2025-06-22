@@ -16,6 +16,10 @@ func StartWeb() {
 	http.HandleFunc("/api/restartServer", api.HandleRestartReq)
 	http.HandleFunc("/api/ws/serverInfo", api.HandleServerInfoWS)
 	http.HandleFunc("/api/ws/serverLogs", api.HandleServerLogsWS)
+	http.HandleFunc("/api/savedLogs", api.GetSavedLogs)
+	http.HandleFunc("/api/getSavedLog", api.GetSavedLog)
+	http.HandleFunc("/api/deleteLog", api.DeleteLog)
+	http.HandleFunc("/api/executeCommand", api.ExecuteCommand)
 
 	fmt.Println("Serving on http://127.0.0.1")
 	err := http.ListenAndServe(":80", nil)

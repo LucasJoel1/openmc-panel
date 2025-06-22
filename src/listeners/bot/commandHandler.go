@@ -35,9 +35,9 @@ func CommandHandler(message string) string {
                 return "Server is not online"
             }
             writer := bufio.NewWriter(globals.GetPipes().Stdin)
+            globals.SetServerRunning(false)
             writer.WriteString("stop" + "\n")
             writer.Flush()
-            globals.SetServerRunning(false)
             return "Server stopping"
 			
 		default:

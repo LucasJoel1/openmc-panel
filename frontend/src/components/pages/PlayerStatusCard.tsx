@@ -22,7 +22,7 @@ interface PlayerStatusProps {
 
 export default function PlayerStatusCard(props: PlayerStatusProps) {
     return (
-        <Card>
+        <Card className="bg-muted/50 rounded-xl">
             <CardHeader>
                 <CardDescription>Players</CardDescription>
                 <CardTitle className="text-3xl font-bold">
@@ -41,7 +41,7 @@ export default function PlayerStatusCard(props: PlayerStatusProps) {
                     <TableBody>
                         {props.data.list?.map((player) => {
                             return (
-                                <TableRow key={ player.name }>
+                                <TableRow key={player.name}>
                                     <TableCell className="font-medium">{player.name}</TableCell>
                                     <TableCell>{player.ping}ms</TableCell>
                                     <TableCell>{formatTime(player.time)}</TableCell>
