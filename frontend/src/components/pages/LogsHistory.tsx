@@ -99,8 +99,10 @@ export default function LogsHistory(props: logsHistoryProps) {
 
     const deleteLogByID = (id: number) => {
         fetch(`/api/deleteLog?logID=${id.toString()}`)
-            .then(() => getLogs())
-            .then((error) => {
+            .then(() => {
+                getLogs()
+            })
+            .then(error => {
                 console.error(`failed to delete log ${error}`)
                 toast(`failed to delete log with id ${id}`)
             })

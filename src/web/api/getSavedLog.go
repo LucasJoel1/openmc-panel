@@ -30,7 +30,8 @@ func GetSavedLog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, log := range dir {
-		if strings.Split(log.Name(), ".")[0] == logID {
+		baseName := strings.Split(log.Name(), ".")[0]
+		if baseName == logID && strings.HasSuffix(log.Name(), ".log.gz") {
 			filePath := "./logs/" + log.Name()
 
 			file, err := os.Open(filePath)
