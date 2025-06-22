@@ -63,7 +63,9 @@ export default function ConsolePage(props: ConsolePageProps) {
     const executeCommand = () => {
         if (!command.trim()) return;
 
-        fetch(`/api/executeCommand?command=${encodeURIComponent(command)}`)
+        fetch(`/api/executeCommand?command=${encodeURIComponent(command)}`, {
+            method: "POST"
+        })
             .then(response => {
                 if (!response.ok) {
                     console.error('Failed to execute command');
