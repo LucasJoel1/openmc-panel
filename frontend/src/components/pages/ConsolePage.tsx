@@ -30,6 +30,7 @@ export default function ConsolePage(props: ConsolePageProps) {
     const [loadedLog, setLoadedLog] = useState<string>("")
     const [useLive, setUseLive] = useState<boolean>(true)
     const [autoscroll, setAutoscroll] = useState<boolean>(true);
+    const [command, setCommand] = useState<string>("")
     const ws = useRef<WebSocket | null>(null);
     const lastElement = useRef<HTMLDivElement | null>(null);
 
@@ -58,6 +59,28 @@ export default function ConsolePage(props: ConsolePageProps) {
             lastElement.current.scrollIntoView({ behavior: "smooth", block: "end" });
         }
     }, [logs.length, autoscroll]);
+
+    const executeCommand = () => {
+        if (!command.trim()) return;
+
+        fetch(`/api/executeCommand?command=${encodeURIComponent(command)}`)
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Failed to execute command');
+                }
+            })
+            .catch(error => {
+                console.error('Error executing command:', error);
+            });
+
+        setCommand("");
+    }
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            executeCommand();
+        }
+    }
 
     return (
         <Card
@@ -112,11 +135,16 @@ export default function ConsolePage(props: ConsolePageProps) {
                         </div>
                     </ScrollArea>
                 </div>
-            </CardContent>
-            <CardFooter>
+            </CardContent>            <CardFooter>
                 <div className="flex w-full items-center space-x-2">
-                    <Input placeholder="Enter a command..." type="text" />
-                    <Button variant={"outline"}>Send</Button>
+                    <Input
+                        placeholder="Enter a command..."
+                        type="text"
+                        value={command}
+                        onChange={(e) => setCommand(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                    />
+                    <Button variant={"outline"} onClick={() => executeCommand()}>Send</Button>
                 </div>
             </CardFooter>
         </Card>
