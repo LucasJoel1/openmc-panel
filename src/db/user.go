@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"log"
 	"regexp"
 	"golang.org/x/crypto/bcrypt"
@@ -12,7 +12,26 @@ import (
 var usernameExpr, _ = regexp.Compile(`^[a-zA-Z0-9_.-]{3,30}$`)
 var passwordExpr, _ = regexp.Compile(`^[a-zA-Z0-9!"#$%&'()*+,-.\/:;<=>?@[\]^_{|}~]{8,64}$`)
 
+var ErrUserNotExist = errors.New("user not found")
+var ErrWrongPassword = errors.New("wrong password")
+var ErrUsernameInvalid = errors.New("username invalid")
+var ErrPasswordInvalid = errors.New("password invalid")
+var ErrUserExists = errors.New("user already exists")
+
+type SmallUser struct {
+	Username string `json:"username"`
+	IsAdmin bool `json:"isAdmin"`
+}
+
 func CreateUser(username string, password string, isAdmin bool) (err error) {
+	if !usernameExpr.Match([]byte(username)) {
+		return ErrUsernameInvalid
+	}
+
+	if !passwordExpr.Match([]byte(password)) {
+		return ErrPasswordInvalid
+	}
+
 	db, err := OpenDB()
 
 	if err != nil {
@@ -25,14 +44,6 @@ func CreateUser(username string, password string, isAdmin bool) (err error) {
 		}
 	}()
 
-	if !usernameExpr.Match([]byte(username)) {
-		return fmt.Errorf("username invalid")
-	}
-
-	if !passwordExpr.Match([]byte(password)) {
-		return fmt.Errorf("password invalid")
-	}
-
 	var exists bool
 	err = db.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE username=?)`, username).Scan(&exists)
 
@@ -41,7 +52,7 @@ func CreateUser(username string, password string, isAdmin bool) (err error) {
 	}
 
 	if exists {
-		return fmt.Errorf("user already exists")
+		return ErrUserExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -58,7 +69,7 @@ func CreateUser(username string, password string, isAdmin bool) (err error) {
 		binary.BigEndian.PutUint64(permissions, uint64(0))
 	}
 
-	_, err = db.Exec("INSERT INTO users (username, password_hash, permissions) VALUES (?, ?, ?)", username, hashedPassword, permissions)
+	_, err = db.Exec("INSERT INTO users (username, password_hash, permissions, admin_account) VALUES (?, ?, ?, ?)", username, hashedPassword, permissions, isAdmin)
 
 	if err != nil {
 		return err
@@ -67,30 +78,35 @@ func CreateUser(username string, password string, isAdmin bool) (err error) {
 	return nil
 }
 
-func VerifyUserCreds(username string, password string) (jwt string, err error) {
+func VerifyUserCreds(username string, password string) (jwt string, userPermissions uint64, err error) {
 	db, err := OpenDB()
 
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
+
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Error closing database: %v", closeErr)
+		}
+	}()
 
 	var id int
 	var passwordHash string
 	var permissions []byte
-
 	err = db.QueryRow("SELECT id, password_hash, permissions FROM users WHERE username=?", username).Scan(&id, &passwordHash, &permissions)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("user not found")
+			return "", 0, ErrUserNotExist
 		}
-		return "", err
+		return "", 0, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 
 	if err != nil {
-		return "", fmt.Errorf("wrong password")
+		return "", 0, ErrWrongPassword
 	}
 
 	parsedPerms := binary.BigEndian.Uint64(permissions)
@@ -98,8 +114,44 @@ func VerifyUserCreds(username string, password string) (jwt string, err error) {
 	token, err := CreateToken(id, username, parsedPerms)
 
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
-	return token, nil
+	return token, parsedPerms, nil
+}
+
+func GetUsersNames() (usernames []SmallUser, err error) {
+	db, err := OpenDB()
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Error closing database: %v", closeErr)
+		}
+	}()
+
+	rows, err := db.Query("SELECT username, admin_account FROM users")
+
+	if err != nil {
+		return nil, err
+	}
+
+	var users []SmallUser
+
+	for rows.Next() {
+		var username string
+		var adminAccount bool
+		err = rows.Scan(&username, &adminAccount)
+
+		if err != nil {
+			continue
+		}
+
+		users = append(users, SmallUser{Username: username, IsAdmin: adminAccount})
+	}
+
+	return users, nil
 }

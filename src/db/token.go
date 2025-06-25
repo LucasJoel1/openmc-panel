@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var secret string = getJWTSecret()
+var secret []byte = getJWTSecret()
 
 type Token struct {
 	id          int
@@ -17,7 +17,7 @@ type Token struct {
 	exp         int64
 }
 
-func getJWTSecret() string {
+func getJWTSecret() []byte {
 	godotenv.Load()
 	secret := os.Getenv("TOKEN_SECRET")
 
@@ -25,7 +25,7 @@ func getJWTSecret() string {
 		panic("TOKEN_SECRET not set")
 	}
 
-	return secret
+	return []byte(secret)
 }
 
 func CreateToken(_id int, _username string, _permissions uint64) (string, error) {

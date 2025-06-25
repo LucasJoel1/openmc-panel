@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import RequestButton from "../RequestButton";
 import {
     Card,
@@ -9,10 +9,11 @@ import {
     CardFooter,
 } from "../ui/card";
 import { type ServerStatusInterface } from "./StatusPage";
-import { formatTime } from "@/lib/utils";
+import { checkPermissions, formatTime, Permissions } from "@/lib/utils";
 
 interface ServerStatusProps {
   data: ServerStatusInterface;
+  permissions: bigint;
 }
 
 interface ParsedServerData {
@@ -31,6 +32,21 @@ export default function ServerStatusCard(props: ServerStatusProps) {
         memory: "0",
         cpu: "",
     });
+
+    const canStartServer = useMemo(() => 
+        checkPermissions(props.permissions, Permissions.START_SERVER),
+        [props.permissions]
+    )
+
+    const canStopServer = useMemo(() =>
+        checkPermissions(props.permissions, Permissions.STOP_SERVER),
+        [props.permissions]
+    )
+
+    const canRestartServer = useMemo(() =>
+        checkPermissions(props.permissions, Permissions.RESTART_SERVER),
+        [props.permissions]
+    )
 
     useEffect(() => {
         const data: ParsedServerData = {
@@ -101,9 +117,9 @@ export default function ServerStatusCard(props: ServerStatusProps) {
                 </div>
             </CardContent>
             <CardFooter className={"flex flex-row gap-4"}>
-                <RequestButton contents="Start" req="/api/startServer" />
-                <RequestButton contents="Stop" req="/api/stopServer" />
-                <RequestButton contents="Restart" req="/api/restartServer" />
+                {canStartServer && <RequestButton contents="Start" req="/api/startServer" />}
+                {canStopServer && <RequestButton contents="Stop" req="/api/stopServer" />}
+                {canRestartServer && <RequestButton contents="Restart" req="/api/restartServer" />}
             </CardFooter>
         </Card>
     );

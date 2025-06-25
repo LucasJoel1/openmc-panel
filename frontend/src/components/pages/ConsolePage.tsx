@@ -9,22 +9,18 @@ import {
     CardFooter,
 } from "../ui/card";
 import { Input } from "../ui/input";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Separator } from "../ui/separator";
 import React from "react";
 import LogsHistory from "./LogsHistory";
 import { toast } from "sonner";
+import { checkPermissions, Permissions } from "@/lib/utils";
 
 interface ConsolePageProps {
     visible: boolean;
     isPage: boolean;
+    permissions: bigint
 }
-
-// interface LoadedLog {
-//     date: Date
-//     index: number
-//     data: string
-// }
 
 export default function ConsolePage(props: ConsolePageProps) {
     const [logs, setLogs] = useState<string[]>([]);
@@ -32,20 +28,26 @@ export default function ConsolePage(props: ConsolePageProps) {
     const [useLive, setUseLive] = useState<boolean>(true)
     const [autoscroll, setAutoscroll] = useState<boolean>(true);
     const [command, setCommand] = useState<string>("")
+    const [consoleConnected, setConsoleConnected] = useState<boolean>(false)
     const ws = useRef<WebSocket | null>(null);
     const lastElement = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (!props.visible) return;
         ws.current = new WebSocket(
             "ws://" +
-            window.location.href.split("#")[0].split("://")[1] +
+            window.location.href.split("#")[0].replace("?", "").split("://")[1] +
             "api/ws/serverLogs"
         );
 
         ws.current.onopen = () => {
+            setConsoleConnected(true)
             console.log("connected to server logs ws");
         };
+
+        ws.current.onclose = () => {
+            setConsoleConnected(false)
+            console.log("disconnected from ws")
+        }
 
         ws.current.onmessage = (event) => {
             setLogs((prevLogs) => {
@@ -57,7 +59,17 @@ export default function ConsolePage(props: ConsolePageProps) {
         return () => {
             ws.current?.close();
         };
-    }, [props.visible]);
+    }, []);
+
+    const canExecuteCommands = useMemo(() =>
+        checkPermissions(props.permissions, Permissions.SEND_COMMANDS),
+        [props.permissions]
+    )
+
+    const canViewLogsHistory = useMemo(() =>
+        checkPermissions(props.permissions, Permissions.VIEW_LOGS_HISTORY),
+        [props.permissions]
+    )
 
     useEffect(() => {
         if (autoscroll && logs.length > 0 && lastElement.current !== null) {
@@ -92,6 +104,7 @@ export default function ConsolePage(props: ConsolePageProps) {
     }
 
     return (
+        consoleConnected ? (
         <Card
             className={
                 props.visible !== true
@@ -120,7 +133,7 @@ export default function ConsolePage(props: ConsolePageProps) {
                             >
                                 Autoscroll
                             </Button>
-                            {props.isPage && <LogsHistory setLoadedLogs={setLoadedLog} setUseLive={setUseLive} />}
+                            {props.isPage && canViewLogsHistory && <LogsHistory permissions={props.permissions} setLoadedLogs={setLoadedLog} setUseLive={setUseLive} />}
                         </div>
                     </div>
                 </div>{" "}
@@ -144,18 +157,21 @@ export default function ConsolePage(props: ConsolePageProps) {
                         </div>
                     </ScrollArea>
                 </div>
-            </CardContent>            <CardFooter>
+            </CardContent>
+            <CardFooter>
                 <div className="flex w-full items-center space-x-2">
                     <Input
-                        placeholder="Enter a command..."
+                        placeholder={canExecuteCommands ? "Enter a command..." : "You do not have permissions to execute commands"}
                         type="text"
                         value={command}
                         onChange={(e) => setCommand(e.target.value)}
                         onKeyDown={handleKeyPress}
+                        disabled={!canExecuteCommands}
                     />
-                    <Button variant={"outline"} onClick={() => executeCommand()}>Send</Button>
+                    <Button variant={"outline"} disabled={!canExecuteCommands} onClick={() => executeCommand()}>Send</Button>
                 </div>
             </CardFooter>
         </Card>
+        ) : null
     );
 }
