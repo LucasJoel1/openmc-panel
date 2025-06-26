@@ -73,7 +73,7 @@ export default function CreateUserForm(props: CreateUserFormProps) {
             </DialogTrigger>
             <DialogContent>
                 <form onSubmit={(e) => submitCreateUserForm(e)}>
-                    <DialogHeader>
+                    <DialogHeader className="mb-4">
                         <DialogTitle>Create New User</DialogTitle>
                         <DialogDescription>Create a new user for the panel.</DialogDescription>
                     </DialogHeader>
@@ -90,7 +90,8 @@ export default function CreateUserForm(props: CreateUserFormProps) {
                             <Label htmlFor="confirmPassword">Confirm Password</Label>
                             <Input id="confirmPassword" type="password" onChange={(e) => setConfirmPassword(e.target.value)} />
                         </div>
-                    </div>                    <DialogFooter>
+                    </div>                    
+                    <DialogFooter className="mt-4">
                         <DialogClose asChild>
                             <Button ref={closeButtonRef} variant="outline">Cancel</Button>
                         </DialogClose>

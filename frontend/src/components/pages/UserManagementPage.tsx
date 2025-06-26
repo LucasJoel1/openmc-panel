@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { toast } from "sonner"
 import { checkPermissions, Permissions } from "@/lib/utils"
 import CreateUserForm from "./CreateUserForm"
+import ModifyUserPopout from "./ModifyUserPopout"
+import ChangePasswordDialog from "./ChangePasswordDialog"
 
 interface UserManagementProps {
     permissions: bigint
@@ -73,8 +75,9 @@ export default function UserManagementPage(props: UserManagementProps) {
                                     <TableRow key={user.username} className="flex">
                                         <TableCell className="flex-1 flex items-center">{user.username}</TableCell>
                                         <TableCell className="flex-auto flex items-center justify-end">
-                                            <div>
-                                                {canModifyUsers && <Button variant="outline" size="sm" className="mr-4" disabled={user.isAdmin && localStorage.getItem("username") !== user.username}>Modify</Button>}
+                                            <div className="flex gap-2">
+                                                {canModifyUsers && <ModifyUserPopout user={user} loggedInUserPermissionLevel={props.permissions} />}
+                                                {canModifyUsers && <ChangePasswordDialog user={user} />}
                                                 {canDeleteUsers && <Button variant="destructive" size="sm" disabled={user.isAdmin}>Delete</Button>}
                                             </div>
                                         </TableCell>
