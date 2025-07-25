@@ -1,11 +1,12 @@
-import { Permissions } from "@/lib/utils";
+import { checkPermissions, Permissions } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { ScrollArea } from "../ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Checkbox } from "../ui/checkbox";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "./UserManagementPage";
+import { toast } from "sonner";
 
 interface ModifyUserPopoutProps {
     user: User;
@@ -24,10 +25,58 @@ export default function ModifyUserPopout(props: ModifyUserPopoutProps) {
         setPermissionStates(newStates);
     };
 
+    useEffect(() => {
+        fetch(`/api/getUserPerms?username=${props.user.username}`)
+            .then(async (res) => {
+                const text = await res.text();
+                if (res.status !== 200) {
+                    throw new Error(text || "An unexpected error has occured during login")
+                }
+                const perms = BigInt(text);
+
+                const states = permissionEntries.map(([, value]) =>
+                    checkPermissions(perms, value)
+                );
+                setPermissionStates(states);
+            })
+            .catch((err) => {
+                toast.error(err.message)
+                console.error(err.message)
+            })
+    }, [])
+
+    const updatePermissions = () => {
+        let permissions = 0n;
+        for (const bit of permissionStates.reverse()) {
+            permissions = (permissions << 1n) | (bit ? 1n : 0n)
+        }
+        fetch(`/api/modiftUserPermsissions`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                username: props.user.username,
+                permissions: permissions.toString()
+            })
+        })
+        .then(async (res) => {
+            const data = await res.text()
+            if (res.status !== 200) {
+                throw new Error(data || "An unexpected error has occured during login")
+            }
+            return data
+        })
+        .then(data => {
+            toast(data)
+        })
+        .catch(err => {
+            toast.error(err.message)
+        })
+    }
+
     return (
         <Sheet>
-            <SheetTrigger>
-                <Button variant="outline" disabled={props.user.isAdmin && localStorage.getItem("username") !== props.user.username}>Permissions</Button>
+            <SheetTrigger disabled={props.user.isAdmin}>
+                <Button variant="outline" disabled={props.user.isAdmin}>Permissions</Button>
             </SheetTrigger>
             <SheetContent className="sm:max-w-md flex flex-col h-full">
                 <SheetHeader>
@@ -46,6 +95,7 @@ export default function ModifyUserPopout(props: ModifyUserPopoutProps) {
                                             id={`perm-${value}`}
                                             checked={permissionStates[index]}
                                             onCheckedChange={(checked) => handlePermissionChange(index, checked as boolean)}
+                                            disabled={!checkPermissions(props.loggedInUserPermissionLevel, value)}
                                         />
                                         <Label
                                             htmlFor={`perm-${value}`}
@@ -61,7 +111,7 @@ export default function ModifyUserPopout(props: ModifyUserPopoutProps) {
                 </div>
 
                 <div className="p-4 border-t">
-                    <Button className="w-full">Update Permissions</Button>
+                    <Button className="w-full" onClick={updatePermissions}>Update Permissions</Button>
                 </div>
             </SheetContent>
         </Sheet>

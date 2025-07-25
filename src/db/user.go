@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"regexp"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -20,7 +22,7 @@ var ErrUserExists = errors.New("user already exists")
 
 type SmallUser struct {
 	Username string `json:"username"`
-	IsAdmin bool `json:"isAdmin"`
+	IsAdmin  bool   `json:"isAdmin"`
 }
 
 func CreateUser(username string, password string, isAdmin bool) (err error) {
@@ -69,7 +71,7 @@ func CreateUser(username string, password string, isAdmin bool) (err error) {
 		binary.BigEndian.PutUint64(permissions, uint64(0))
 	}
 
-	_, err = db.Exec("INSERT INTO users (username, password_hash, permissions, admin_account) VALUES (?, ?, ?, ?)", username, hashedPassword, permissions, isAdmin)
+	_, err = db.Exec("INSERT INTO users (username, password_hash, permissions, admin_account, token_version) VALUES (?, ?, ?, ?, ?)", username, hashedPassword, permissions, isAdmin, 0)
 
 	if err != nil {
 		return err
@@ -94,7 +96,8 @@ func VerifyUserCreds(username string, password string) (jwt string, userPermissi
 	var id int
 	var passwordHash string
 	var permissions []byte
-	err = db.QueryRow("SELECT id, password_hash, permissions FROM users WHERE username=?", username).Scan(&id, &passwordHash, &permissions)
+	var tokenVersion int
+	err = db.QueryRow("SELECT id, password_hash, permissions, token_version FROM users WHERE username=?", username).Scan(&id, &passwordHash, &permissions, &tokenVersion)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -111,7 +114,7 @@ func VerifyUserCreds(username string, password string) (jwt string, userPermissi
 
 	parsedPerms := binary.BigEndian.Uint64(permissions)
 
-	token, err := CreateToken(id, username, parsedPerms)
+	token, err := CreateToken(id, username, parsedPerms, tokenVersion)
 
 	if err != nil {
 		return "", 0, err
@@ -154,4 +157,58 @@ func GetUsersNames() (usernames []SmallUser, err error) {
 	}
 
 	return users, nil
+}
+
+func GetUserPermissions(username string) (perms uint64, err error) {
+	db, err := OpenDB()
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Error closing database: %v", closeErr)
+		}
+	}()
+
+	var permissions []byte
+	err = db.QueryRow("SELECT permissions FROM users WHERE username = ?", username).Scan(&permissions)
+
+	if err != nil {
+		fmt.Println(username)
+		if err == sql.ErrNoRows {
+			return 0, ErrUserNotExist
+		}
+		return 0, err
+	}
+
+	parsedPerms := binary.BigEndian.Uint64(permissions)
+
+	return parsedPerms, nil
+}
+
+func SetUserPerms(username string, permissions uint64) (err error) {
+    db, err := OpenDB()
+
+    if err != nil {
+        return err
+    }
+
+    defer func() {
+        if closeErr := db.Close(); closeErr != nil {
+            log.Printf("Error closing database: %v", closeErr)
+        }
+    }()
+
+    permBytes := make([]byte, 8)
+    binary.BigEndian.PutUint64(permBytes, permissions)
+
+    _, err = db.Exec("UPDATE users SET permissions=? WHERE username=?", permBytes, username)
+
+    if err != nil {
+        return err
+    }
+
+    return nil
 }

@@ -29,7 +29,8 @@ func SetupDB() error {
 			password_hash TEXT NOT NULL,
 			permissions BLOB NOT NULL,
 			apiToken TEXT,
-			admin_account BOOLEAN NOT NULL
+			admin_account BOOLEAN NOT NULL,
+			token_version INTEGER NOT NULL
 		);
 	`
 

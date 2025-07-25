@@ -23,6 +23,8 @@ func StartWeb() {
 	http.HandleFunc("/api/login", api.LoginUser)
 	http.HandleFunc("/api/registerUser", api.RegisterUser)
 	http.HandleFunc("/api/getUsers", api.GetUsers)
+	http.HandleFunc("/api/modiftUserPermsissions", api.ModifyUserPermissions)
+	http.HandleFunc("/api/getUserPerms", api.GetUserPermissions)
 
 
 	fmt.Println("Serving on http://127.0.0.1")

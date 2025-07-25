@@ -25,7 +25,13 @@ export default function LoginForm(props: LoginFormProps) {
                 password: password
             })
         })
-            .then((res) => res.json())
+            .then(async (res) => {
+                if (res.status !== 200) {
+                    const errorText = await res.text();
+                    throw new Error(errorText || "An unexpected error has occured during login")
+                }
+                return res.json()
+            })
             .then((data) => {
                 localStorage.setItem("username", data.username)
                 localStorage.setItem("permissions", BigInt(data.permissions).toString())
@@ -33,8 +39,8 @@ export default function LoginForm(props: LoginFormProps) {
                 toast(`Logged in as ${data.username}`)
             })
             .catch(error => {
-                console.error(error)
-                toast(error)
+                console.error(error.message)
+                toast.error(error.message || "An unknown error occurred")
             })
     }
 

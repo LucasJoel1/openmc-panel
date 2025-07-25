@@ -16,9 +16,6 @@ export const Permissions = {
 	DELETE_USER: 0x800n,
 	MODIFY_USER: 0x1000n,
 	VIEW_USERS: 0x2000n,
-	ASASD: 0x8n,
-	ASDSDS: 0x4n,
-	SADSAADS: 0x2n
 } as const;
 
 export function checkPermissions(permissions: bigint, permissionToCheck: bigint): boolean {

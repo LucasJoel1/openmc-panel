@@ -61,7 +61,7 @@ export default function ChangePasswordDialog(props: ChangePasswordDialogProps) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" disabled={props.user.isAdmin && localStorage.getItem("username") !== props.user.username}>
+                <Button variant="outline" disabled={props.user.isAdmin && localStorage.getItem("username") !== props.user.username}>
                     Change Password
                 </Button>
             </DialogTrigger>

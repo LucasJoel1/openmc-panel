@@ -78,7 +78,7 @@ export default function UserManagementPage(props: UserManagementProps) {
                                             <div className="flex gap-2">
                                                 {canModifyUsers && <ModifyUserPopout user={user} loggedInUserPermissionLevel={props.permissions} />}
                                                 {canModifyUsers && <ChangePasswordDialog user={user} />}
-                                                {canDeleteUsers && <Button variant="destructive" size="sm" disabled={user.isAdmin}>Delete</Button>}
+                                                {canDeleteUsers && <Button variant="destructive" disabled={user.isAdmin}>Delete</Button>}
                                             </div>
                                         </TableCell>
                                     </TableRow>
