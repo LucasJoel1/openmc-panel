@@ -10,9 +10,10 @@ import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { FileText, Download, Trash2, RefreshCw } from "lucide-react";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "../ui/dialog";
 import { toast } from "sonner";
+import { checkPermissions, Permissions } from "@/lib/utils";
 
 interface historicalLog {
     id: number,
@@ -31,10 +32,16 @@ interface logType {
 interface logsHistoryProps {
     setLoadedLogs?: Dispatch<SetStateAction<string>>
     setUseLive?: Dispatch<SetStateAction<boolean>>
+    permissions: bigint
 }
 
 export default function LogsHistory(props: logsHistoryProps) {
     const [historicalLogs, setHistoricalLogs] = useState<historicalLog[]>([]);
+
+    const canDeleteLogs = useMemo(() =>
+        checkPermissions(props.permissions, Permissions.DELETE_LOG),
+        [props.permissions]
+    )
 
     const getLogs = () => {
         fetch("/api/savedLogs", {
@@ -120,77 +127,79 @@ export default function LogsHistory(props: logsHistoryProps) {
                 <SheetTitle>Logs History</SheetTitle>
                 <SheetDescription>Select a historical log to view.</SheetDescription>
             </SheetHeader>
-            <div className="px-6 pb-3">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => getLogs()}
-                >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                <div className="px-6 pb-3">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => getLogs()}
+                    >
+                        <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
-                </Button>
-            </div>
-            <ScrollArea className="flex-1 h-full w-full">
-                <div className="p-4 pb-12">
-                    {historicalLogs.map((log, index) => (
-                        <div key={log.id}>
-                            <div className="flex items-center justify-between py-3 px-2 rounded-md hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center space-x-3">
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                    <div>
-                                        <p className="font-medium text-sm">{log.date}</p>
-                                        <p className="text-xs text-muted-foreground">{log.time} • {log.size} (compressed)</p>
+                    </Button>
+                </div>
+                <ScrollArea className="flex-1 h-full w-full">
+                    <div className="p-4 pb-12">
+                        {historicalLogs.map((log, index) => (
+                            <div key={log.id}>
+                                <div className="flex items-center justify-between py-3 px-2 rounded-md hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center space-x-3">
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="font-medium text-sm">{log.date}</p>
+                                            <p className="text-xs text-muted-foreground">{log.time} • {log.size} (compressed)</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => getLogByID(log.id)}
+                                            className="h-7 px-3"
+                                        >
+                                            <Download className="h-3 w-3 mr-1" />
+                                            Load
+                                        </Button>
+                                        {canDeleteLogs &&
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        // onClick={}
+                                                        className="h-7 px-3"
+                                                    >
+                                                        <Trash2 className="h-3 w-3 mr-1" />
+                                                        Delete
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent>
+                                                    <DialogHeader>
+                                                        <DialogTitle>Confirm Deletion</DialogTitle>
+                                                        <DialogDescription>Are you sure you would like to delete this log?  This <b>CANNOT</b> be undone.</DialogDescription>
+                                                    </DialogHeader>
+                                                    <DialogFooter>
+                                                        <DialogClose asChild>
+                                                            <Button variant="outline">Cancel</Button>
+                                                        </DialogClose>
+                                                        <DialogClose asChild>
+                                                            <Button
+                                                                variant="destructive"
+                                                                onClick={() => deleteLogByID(log.id)}
+                                                            >
+                                                                Confirm</Button>
+                                                        </DialogClose>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
+                                        }
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => getLogByID(log.id)}
-                                        className="h-7 px-3"
-                                    >
-                                        <Download className="h-3 w-3 mr-1" />
-                                            Load
-                                    </Button>
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                // onClick={}
-                                                className="h-7 px-3"
-                                            >
-                                                <Trash2 className="h-3 w-3 mr-1" />
-                                                    Delete
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Confirm Deletion</DialogTitle>
-                                                <DialogDescription>Are you sure you would like to delete this log?  This <b>CANNOT</b> be undone.</DialogDescription>
-                                            </DialogHeader>
-                                            <DialogFooter>
-                                                <DialogClose asChild>
-                                                    <Button variant="outline">Cancel</Button>
-                                                </DialogClose>
-                                                <DialogClose asChild>
-                                                    <Button 
-                                                        variant="destructive"
-                                                        onClick={() => deleteLogByID(log.id)}
-                                                    >
-                                                    Confirm</Button>
-                                                </DialogClose>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
+                                {index < historicalLogs.length - 1 && <Separator />}
                             </div>
-                            {index < historicalLogs.length - 1 && <Separator />}
-                        </div>
-                    ))}
-                </div>
-            </ScrollArea>
+                        ))}
+                    </div>
+                </ScrollArea>
             </SheetContent>
         </Sheet>
     );

@@ -4,3 +4,4 @@ node_modules
 /server/
 /server.json
 /logs/
+openmc.db

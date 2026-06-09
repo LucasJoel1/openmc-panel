@@ -22,7 +22,14 @@ export default defineConfig([
         files: ["**/*.{jsx,tsx}"],
         rules: {
             "react/react-in-jsx-scope": "off",
-            "indent": ["error", 4]
+            "@typescript-eslint/indent": "off",
+            "indent": "off", // Turn off strict indentation
+            "@typescript-eslint/no-unused-vars": ["error", { 
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_" 
+            }],
+            "prefer-const": "error",
+            "no-var": "error"
         }
     }
 ]);

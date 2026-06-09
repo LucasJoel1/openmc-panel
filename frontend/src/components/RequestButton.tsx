@@ -29,7 +29,6 @@ export default function RequestButton(props: RequestButtonProps) {
 
     useEffect(() => {
         if (isSuccess || isError) {
-            console.log("TOAST!")
             toast(props.contents + (isSuccess ? " server successfully executed" : " server failed to execute"))
             const timer = setTimeout(() => {
                 queryClient.resetQueries({ queryKey: ['serverAction', props.req] })

@@ -3,14 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
+	"openmc-panel/src/db"
 	"openmc-panel/src/globals"
 	"openmc-panel/src/listeners/bot"
+	"openmc-panel/src/web"
 	"os"
 	"os/signal"
 	"syscall"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"openmc-panel/src/web"
 )
 
 func main() {
@@ -39,6 +41,13 @@ func main() {
 
 	if err != nil {
 		log.Fatal("Error opening Discord client ", err)
+	}
+
+	err = db.SetupDB()
+
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
 	go web.StartWeb()
